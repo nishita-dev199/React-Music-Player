@@ -1,70 +1,117 @@
 export const sampleSongs = [
   {
     id: 1,
-    title: "Blinding Lights",
-    artist: "The Weeknd",
-    album: "After Hours",
-    duration: "3:20",
+    title: "Summer Days",
+    artist: "Martin Garrix",
+    featured: "feat. Macklemore & Patrick Stump of Fall Out Boy",
+    album: "Summer Days",
+    duration: "2:43",
     imageUrl:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
-    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // placeholder
-    genre: "Pop",
-    year: 2020,
-    isFavorite: false,
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-1.wav",
+    genre: "Pop / Dance",
+    year: 2019,
+    isFavorite: true,
   },
   {
     id: 2,
+    title: "Señorita",
+    artist: "Shawn Mendes, Camila Cabello",
+    featured: "Shawn Mendes & Camila Cabello",
+    album: "Shawn Mendes (Deluxe)",
+    duration: "3:11",
+    imageUrl:
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-2.wav",
+    genre: "Pop",
+    year: 2019,
+    isFavorite: true,
+  },
+  {
+    id: 3,
+    title: "SOS",
+    artist: "Avicii, Aloe Blacc",
+    featured: "feat. Aloe Blacc",
+    album: "Tim",
+    duration: "2:37",
+    imageUrl:
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-3.wav",
+    genre: "Electronic",
+    year: 2019,
+    isFavorite: false,
+  },
+  {
+    id: 4,
+    title: "Arcade",
+    artist: "Duncan Laurence",
+    featured: "Duncan Laurence",
+    album: "Small Town Boy",
+    duration: "3:03",
+    imageUrl:
+      "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-4.wav",
+    genre: "Indie Pop",
+    year: 2019,
+    isFavorite: false,
+  },
+  {
+    id: 5,
+    title: "Blinding Lights",
+    artist: "The Weeknd",
+    featured: "The Weeknd",
+    album: "After Hours",
+    duration: "3:20",
+    imageUrl:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-5.wav",
+    genre: "Synthwave",
+    year: 2020,
+    isFavorite: true,
+  },
+  {
+    id: 6,
     title: "Shape of You",
     artist: "Ed Sheeran",
+    featured: "Ed Sheeran",
     album: "÷ (Divide)",
     duration: "3:53",
     imageUrl:
-      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
-    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // placeholder
+      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-6.wav",
     genre: "Pop",
     year: 2017,
     isFavorite: true,
   },
   {
-    id: 3,
+    id: 7,
     title: "Someone Like You",
     artist: "Adele",
+    featured: "Adele",
     album: "21",
     duration: "4:45",
     imageUrl:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
-    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // placeholder
+      "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-7.wav",
     genre: "Soul",
     year: 2011,
-    isFavorite: true,
-  },
-  {
-    id: 4,
-    title: "Bohemian Rhapsody",
-    artist: "Queen",
-    album: "A Night at the Opera",
-    duration: "5:55",
-    imageUrl:
-      "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=300&h=300&fit=crop",
-    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // placeholder
-    genre: "Rock",
-    year: 1975,
     isFavorite: false,
   },
   {
-    id: 5,
+    id: 8,
     title: "Bad Guy",
     artist: "Billie Eilish",
-    album: "When We All Fall Asleep, Where Do We Go?",
+    featured: "Billie Eilish",
+    album: "When We All Fall Asleep",
     duration: "3:14",
     imageUrl:
-      "https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=300&h=300&fit=crop",
-    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // placeholder
-    genre: "Pop",
+      "https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-8.wav",
+    genre: "Alt Pop",
     year: 2019,
     isFavorite: false,
   },
 ];
 
-export const trendingSongs = sampleSongs.slice(0, 3);
+export const trendingSongs = sampleSongs.slice(0, 4);
 export const favoriteSongs = sampleSongs.filter((song) => song.isFavorite);

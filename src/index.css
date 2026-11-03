@@ -1,15 +1,198 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  box-sizing: border-box;
-  background-color: black;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --teal-primary: #2d8a95;
+  --teal-dark: #1f6a74;
+  --teal-deep: #144e56;
+  --teal-light: #3aa1ad;
+  --orange-primary: #e8412b;
+  --orange-dark: #c9321e;
+  --orange-deep: #962112;
+  --orange-light: #f25843;
+  --text-white: #ffffff;
+  --text-black: #0a0a0a;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #144e56;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Visible, elegant vertical page scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 30, 35, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #258591 0%, #e8412b 100%);
+  border-radius: 9999px;
+  border: 2px solid rgba(10, 30, 35, 0.7);
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e8412b;
+  box-shadow: 0 0 12px rgba(232, 65, 43, 0.8);
+}
+
+/* Hide scrollbar for seamless infinite wheel scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Rotating vinyl animation */
+@keyframes spin-vinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-vinyl {
+  animation: spin-vinyl 15s linear infinite;
+}
+
+.spin-paused {
+  animation-play-state: paused;
+}
+
+/* Realistic vinyl grooves styling */
+.vinyl-grooves {
+  background: 
+    radial-gradient(circle at center, transparent 38%, rgba(0, 0, 0, 0.8) 38.5%, transparent 39%),
+    radial-gradient(circle at center, transparent 45%, rgba(255, 255, 255, 0.04) 45.5%, transparent 46%),
+    radial-gradient(circle at center, transparent 52%, rgba(0, 0, 0, 0.8) 52.5%, transparent 53%),
+    radial-gradient(circle at center, transparent 60%, rgba(255, 255, 255, 0.05) 60.5%, transparent 61%),
+    radial-gradient(circle at center, transparent 68%, rgba(0, 0, 0, 0.8) 68.5%, transparent 69%),
+    radial-gradient(circle at center, transparent 75%, rgba(255, 255, 255, 0.05) 75.5%, transparent 76%),
+    radial-gradient(circle at center, transparent 83%, rgba(0, 0, 0, 0.8) 83.5%, transparent 84%),
+    radial-gradient(circle at center, transparent 90%, rgba(255, 255, 255, 0.05) 90.5%, transparent 91%),
+    repeating-radial-gradient(circle at center, #111 0, #111 2px, #181818 3px, #0e0e0e 4px);
+}
+
+/* Vinyl light reflection sheen */
+.vinyl-sheen {
+  background: conic-gradient(
+    from 45deg at 50% 50%,
+    rgba(255, 255, 255, 0.12) 0deg,
+    transparent 60deg,
+    rgba(255, 255, 255, 0.12) 180deg,
+    transparent 240deg,
+    rgba(255, 255, 255, 0.12) 360deg
+  );
+}
+
+/* Equalizer sound wave animation */
+@keyframes eq-bounce-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+@keyframes eq-bounce-2 {
+  0%, 100% { height: 16px; }
+  50% { height: 6px; }
+}
+
+@keyframes eq-bounce-3 {
+  0%, 100% { height: 8px; }
+  50% { height: 18px; }
+}
+
+.eq-bar-1 { animation: eq-bounce-1 0.8s ease-in-out infinite; }
+.eq-bar-2 { animation: eq-bounce-2 0.7s ease-in-out infinite 0.15s; }
+.eq-bar-3 { animation: eq-bounce-3 0.9s ease-in-out infinite 0.3s; }
+
+/* Toasts styling with Teal & Orange */
+.toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  background: rgba(19, 78, 86, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(232, 65, 43, 0.2);
+  color: #ffffff;
+  font-size: 0.875rem;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 24rem;
+}
+
+.toast-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-success {
+  border-color: rgba(45, 138, 149, 0.6);
+}
+
+.toast-error {
+  border-color: rgba(232, 65, 43, 0.8);
+}
+
+.toast-info {
+  border-color: rgba(232, 65, 43, 0.5);
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-icon-success { color: #3aa1ad; }
+.toast-icon-error { color: #e8412b; }
+.toast-icon-info { color: #f25843; }
+
+.toast-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: color 0.15s ease;
+}
+
+.toast-close:hover {
+  color: #ffffff;
 }
