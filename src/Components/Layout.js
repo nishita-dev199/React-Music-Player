@@ -53,7 +53,7 @@ export default function Layout({ children }) {
       <main
         className={`flex-1 relative z-10 ${
           isHome
-            ? "p-0 w-full h-full overflow-hidden"
+            ? "p-0 w-full h-full overflow-y-auto overflow-x-hidden lg:overflow-hidden"
             : isDiscover
             ? "p-0 w-full overflow-y-scroll overflow-x-hidden"
             : "overflow-y-auto px-4 md:pl-28 md:pr-8 pt-4 pb-24 md:py-6"

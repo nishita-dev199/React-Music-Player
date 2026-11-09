@@ -274,10 +274,10 @@ export default function Player() {
   const progressPct = duration ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between px-4 sm:px-6 md:pl-28 md:pr-10 lg:pr-12 pt-2 sm:pt-3 pb-20 md:pb-4 overflow-hidden">
+    <div className="relative w-full min-h-full lg:h-full flex flex-col justify-between px-4 sm:px-6 md:pl-28 md:pr-10 lg:pr-12 pt-2 sm:pt-3 pb-24 lg:pb-4 overflow-y-visible lg:overflow-hidden">
       {/* ── Background Split Wave (Edge-to-edge behind side panel) ── */}
       <svg
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none z-0"
+        className="fixed lg:absolute inset-0 w-full h-full object-cover pointer-events-none select-none z-0"
         preserveAspectRatio="none"
         viewBox="0 0 1440 900"
       >
@@ -322,7 +322,7 @@ export default function Player() {
       </svg>
 
       {/* ── Main Layout Grid: Left Title | Center Vinyl & Controls | Right Infinite Scroll Stream ── */}
-      <div className="relative z-10 ml-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto">
+      <div className="relative z-10 ml-0 lg:ml-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-4 lg:my-auto">
         {/* ── LEFT COLUMN: Typography & Artist Details ── */}
         <div className="lg:col-span-4 flex flex-col justify-center text-white">
           <span className="text-xs font-bold tracking-widest text-white/70 uppercase">
@@ -723,7 +723,7 @@ export default function Player() {
       </div>
 
       {/* ── Bottom Bar: Volume and Audio Mode ── */}
-      <div className="relative z-10 flex items-center justify-between pt-3 mt-1 border-t border-white/15">
+      <div className="relative z-10 flex items-center justify-between pt-3 mt-4 lg:mt-1 pb-4 lg:pb-0 border-t border-white/15">
         <div className="flex items-center gap-3 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/15">
           <button
             onClick={toggleMute}
