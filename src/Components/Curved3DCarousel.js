@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 
 /* ── SVG Icons ── */
@@ -69,10 +69,46 @@ export default function Curved3DCarousel({
   onFavorite,
 }) {
   const containerRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(2);
+  const [activeIndex, setActiveIndex] = useState(0);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
+
+  // Triple the songs list for seamless, infinite horizontal scrolling
+  const repeatedSongs = useMemo(() => {
+    if (!songs || songs.length === 0) return [];
+    return [...songs, ...songs, ...songs];
+  }, [songs]);
+
+  // Seamless boundary wrap for infinite scroll
+  const handleInfiniteWrap = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !songs.length) return;
+    const cards = container.querySelectorAll(".curved-3d-card");
+    if (cards.length < songs.length * 2) return;
+
+    const card0 = cards[0];
+    const cardN = cards[songs.length];
+    if (!card0 || !cardN) return;
+
+    const singleSetWidth = cardN.offsetLeft - card0.offsetLeft;
+    if (singleSetWidth <= 0) return;
+
+    // If scrolled near the start (first set), wrap forward into the middle set
+    if (container.scrollLeft < singleSetWidth * 0.4) {
+      container.scrollLeft += singleSetWidth;
+      if (isDraggingRef.current) {
+        scrollLeftRef.current += singleSetWidth;
+      }
+    }
+    // If scrolled near the end (third set), wrap backward into the middle set
+    else if (container.scrollLeft > singleSetWidth * 1.6) {
+      container.scrollLeft -= singleSetWidth;
+      if (isDraggingRef.current) {
+        scrollLeftRef.current -= singleSetWidth;
+      }
+    }
+  }, [songs.length]);
 
   // Dynamic 3D transform update for each card based on distance from center
   const updateTransforms = useCallback(() => {
@@ -80,8 +116,10 @@ export default function Curved3DCarousel({
     if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
+    if (containerRect.width === 0) return;
     const centerX = containerRect.left + containerRect.width / 2;
     const cards = container.querySelectorAll(".curved-3d-card");
+    if (!cards.length) return;
 
     let closestIdx = 0;
     let minDistance = Infinity;
@@ -89,7 +127,7 @@ export default function Curved3DCarousel({
     cards.forEach((card, idx) => {
       const cardRect = card.getBoundingClientRect();
       const cardCenterX = cardRect.left + cardRect.width / 2;
-      const cardWidth = cardRect.width || 220;
+      const cardWidth = cardRect.width || 250;
       const dist = (cardCenterX - centerX) / cardWidth;
 
       const absDist = Math.abs(cardCenterX - centerX);
@@ -98,7 +136,7 @@ export default function Curved3DCarousel({
         closestIdx = idx;
       }
 
-      // Curved 3D perspective calculation
+      // Concave cylinder curve physics (matching Image 1)
       const clampedDist = Math.max(-3.5, Math.min(3.5, dist));
       // Left cards have positive rotateY, right cards have negative rotateY (inward curve)
       const rotateY = -clampedDist * 18;
@@ -119,33 +157,36 @@ export default function Curved3DCarousel({
   // Set up listeners for scroll and window resize
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !songs.length) return;
 
     let rafId;
     const handleScroll = () => {
       cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updateTransforms);
+      rafId = requestAnimationFrame(() => {
+        handleInfiniteWrap();
+        updateTransforms();
+      });
     };
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll);
 
-    // Initial calculation immediately and after layout settles
+    // Initial positioning in the middle set
     updateTransforms();
     const timer = setTimeout(() => {
-      updateTransforms();
-      // Scroll initial center item into middle
-      if (songs.length > 2) {
-        const cards = container.querySelectorAll(".curved-3d-card");
-        if (cards[2]) {
-          const cardRect = cards[2].getBoundingClientRect();
+      const cards = container.querySelectorAll(".curved-3d-card");
+      if (cards.length >= songs.length * 2) {
+        const centerIdx = songs.length + Math.min(2, Math.floor(songs.length / 2));
+        const targetCard = cards[centerIdx];
+        if (targetCard) {
           const containerRect = container.getBoundingClientRect();
+          const cardRect = targetCard.getBoundingClientRect();
           const offset =
             cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
           container.scrollLeft += offset;
-          updateTransforms();
         }
       }
+      updateTransforms();
     }, 60);
 
     return () => {
@@ -154,7 +195,7 @@ export default function Curved3DCarousel({
       container.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleScroll);
     };
-  }, [updateTransforms, songs]);
+  }, [updateTransforms, handleInfiniteWrap, songs.length]);
 
   // Center a specific card
   const scrollToCard = (index) => {
@@ -173,13 +214,19 @@ export default function Curved3DCarousel({
   };
 
   const handlePrev = () => {
-    const target = Math.max(0, activeIndex - 1);
-    scrollToCard(target);
+    const container = containerRef.current;
+    if (!container) return;
+    const cards = container.querySelectorAll(".curved-3d-card");
+    const step = cards.length >= 2 ? cards[1].offsetLeft - cards[0].offsetLeft : 280;
+    container.scrollBy({ left: -step, behavior: "smooth" });
   };
 
   const handleNext = () => {
-    const target = Math.min(songs.length - 1, activeIndex + 1);
-    scrollToCard(target);
+    const container = containerRef.current;
+    if (!container) return;
+    const cards = container.querySelectorAll(".curved-3d-card");
+    const step = cards.length >= 2 ? cards[1].offsetLeft - cards[0].offsetLeft : 280;
+    container.scrollBy({ left: step, behavior: "smooth" });
   };
 
   /* ── Drag to scroll (mouse) ── */
@@ -204,7 +251,8 @@ export default function Curved3DCarousel({
 
   // Helper to compute pre-render transform on first paint
   const getPreRenderTransform = (index) => {
-    const dist = index - 2;
+    const centerIdx = songs.length > 0 ? songs.length + 2 : 2;
+    const dist = index - centerIdx;
     const clampedDist = Math.max(-3.5, Math.min(3.5, dist));
     const rotateY = -clampedDist * 18;
     const scale = Math.max(0.78, 1.06 - Math.abs(clampedDist) * 0.08);
@@ -222,12 +270,12 @@ export default function Curved3DCarousel({
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
               <span>Trending Spotlight</span>
               <span className="text-xs font-black bg-gradient-to-r from-[#cf3420] to-[#e8412b] text-white px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(232,65,43,0.6)] border border-white/20">
-                🔥 3D COVERFLOW
+                🔥 3D COVERFLOW • INFINITE
               </span>
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-white/70 mt-0.5">
-            Swipe or scroll horizontally through trending vinyls & chartbusters
+            Swipe or scroll endlessly through trending vinyls & chartbusters
           </p>
         </div>
 
@@ -250,7 +298,7 @@ export default function Curved3DCarousel({
         </div>
       </div>
 
-      {/* ── 3D Horizontal Scroll Ribbon Container ── */}
+      {/* ── 3D Infinite Horizontal Scroll Ribbon Container ── */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
@@ -266,14 +314,15 @@ export default function Curved3DCarousel({
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {songs.map((song, index) => {
+        {repeatedSongs.map((song, index) => {
           const isCurrent = currentSong?.id === song.id;
           const isCurrentPlaying = isCurrent && isPlaying;
           const isCenter = activeIndex === index;
+          const originalIndex = index % (songs.length || 1);
 
           return (
             <div
-              key={song.id}
+              key={`${song.id}-set-${index}`}
               onClick={() => {
                 if (!isCenter) {
                   scrollToCard(index);
@@ -290,8 +339,8 @@ export default function Curved3DCarousel({
                 minWidth: "220px",
                 minHeight: "340px",
                 transform: getPreRenderTransform(index),
-                zIndex: Math.round(50 - Math.abs(index - 2) * 10),
-                opacity: Math.max(0.5, 1 - Math.abs(index - 2) * 0.15),
+                zIndex: Math.round(50 - Math.abs(index - (songs.length + 2)) * 10),
+                opacity: Math.max(0.5, 1 - Math.abs(index - (songs.length + 2)) * 0.15),
               }}
             >
               {/* Fallback dark teal background */}
@@ -312,7 +361,7 @@ export default function Curved3DCarousel({
               {/* Top Bar: Rank badge & Audio spec */}
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                 <span className="text-[11px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-white flex items-center gap-1.5 shadow-md">
-                  <span className="text-[#e8412b]">#{index + 1}</span>
+                  <span className="text-[#e8412b]">#{originalIndex + 1}</span>
                   <span className="text-white/70">HOT</span>
                 </span>
 
