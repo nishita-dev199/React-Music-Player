@@ -130,10 +130,11 @@ export default function Curved3DCarousel({
     container.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll);
 
-    // Initial position
+    // Initial calculation immediately and after layout settles
+    updateTransforms();
     const timer = setTimeout(() => {
       updateTransforms();
-      // Scroll initial center item into middle if needed
+      // Scroll initial center item into middle
       if (songs.length > 2) {
         const cards = container.querySelectorAll(".curved-3d-card");
         if (cards[2]) {
@@ -145,7 +146,7 @@ export default function Curved3DCarousel({
           updateTransforms();
         }
       }
-    }, 120);
+    }, 60);
 
     return () => {
       clearTimeout(timer);
@@ -201,10 +202,21 @@ export default function Curved3DCarousel({
     isDraggingRef.current = false;
   };
 
+  // Helper to compute pre-render transform on first paint
+  const getPreRenderTransform = (index) => {
+    const dist = index - 2;
+    const clampedDist = Math.max(-3.5, Math.min(3.5, dist));
+    const rotateY = -clampedDist * 18;
+    const scale = Math.max(0.78, 1.06 - Math.abs(clampedDist) * 0.08);
+    const translateZ = -Math.abs(clampedDist) * 45;
+    const translateY = Math.pow(Math.abs(clampedDist), 1.4) * 8;
+    return `perspective(1100px) rotateY(${rotateY}deg) scale(${scale}) translateZ(${translateZ}px) translateY(${translateY}px)`;
+  };
+
   return (
-    <div className="relative w-full overflow-hidden select-none py-4">
+    <div className="relative w-full overflow-hidden select-none py-2 sm:py-4">
       {/* ── Section Header with navigation arrows ── */}
-      <div className="flex items-center justify-between mb-4 px-2">
+      <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
@@ -238,14 +250,14 @@ export default function Curved3DCarousel({
         </div>
       </div>
 
-      {/* ── 3D Horizontal Scroll Ribbon ── */}
+      {/* ── 3D Horizontal Scroll Ribbon Container ── */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="w-full overflow-x-auto flex items-center gap-4 sm:gap-6 py-8 px-[calc(50%-100px)] sm:px-[calc(50%-120px)] md:px-[calc(50%-140px)] scrollbar-none cursor-grab active:cursor-grabbing"
+        className="w-full min-h-[380px] sm:min-h-[440px] overflow-x-auto flex items-center gap-4 sm:gap-6 py-6 sm:py-10 px-[calc(50%-110px)] sm:px-[calc(50%-130px)] md:px-[calc(50%-145px)] scrollbar-none cursor-grab active:cursor-grabbing"
         style={{
           perspective: "1200px",
           transformStyle: "preserve-3d",
@@ -267,7 +279,7 @@ export default function Curved3DCarousel({
                   scrollToCard(index);
                 }
               }}
-              className={`curved-3d-card shrink-0 relative w-52 sm:w-60 h-76 sm:h-88 rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 transform-gpu cursor-pointer group border-2 ${
+              className={`curved-3d-card shrink-0 relative w-[220px] sm:w-[250px] md:w-[270px] h-[340px] sm:h-[380px] md:h-[400px] rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 transform-gpu cursor-pointer group border-2 ${
                 isCenter
                   ? "border-[#e8412b] ring-2 ring-[#e8412b]/60 shadow-[0_15px_40px_rgba(0,0,0,0.8),0_0_30px_rgba(232,65,43,0.5)]"
                   : "border-white/15 hover:border-white/40 shadow-xl"
@@ -275,17 +287,26 @@ export default function Curved3DCarousel({
               style={{
                 willChange: "transform, opacity",
                 transformOrigin: "center center",
+                minWidth: "220px",
+                minHeight: "340px",
+                transform: getPreRenderTransform(index),
+                zIndex: Math.round(50 - Math.abs(index - 2) * 10),
+                opacity: Math.max(0.5, 1 - Math.abs(index - 2) * 0.15),
               }}
             >
+              {/* Fallback dark teal background */}
+              <div className="absolute inset-0 bg-[#0e272c]" />
+
               {/* Background Cover Artwork */}
               <img
                 src={song.imageUrl}
                 alt={song.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="eager"
               />
 
               {/* Gradient Overlays */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/20" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
 
               {/* Top Bar: Rank badge & Audio spec */}
@@ -378,3 +399,4 @@ export default function Curved3DCarousel({
     </div>
   );
 }
+
