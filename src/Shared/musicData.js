@@ -12,6 +12,7 @@ export const sampleSongs = [
     genre: "Pop / Dance",
     year: 2019,
     isFavorite: true,
+    streams: "842,519,301",
   },
   {
     id: 2,
@@ -26,6 +27,7 @@ export const sampleSongs = [
     genre: "Pop",
     year: 2019,
     isFavorite: true,
+    streams: "1,624,390,812",
   },
   {
     id: 3,
@@ -40,6 +42,7 @@ export const sampleSongs = [
     genre: "Electronic",
     year: 2019,
     isFavorite: false,
+    streams: "512,984,120",
   },
   {
     id: 4,
@@ -54,6 +57,7 @@ export const sampleSongs = [
     genre: "Indie Pop",
     year: 2019,
     isFavorite: false,
+    streams: "790,441,209",
   },
   {
     id: 5,
@@ -68,6 +72,7 @@ export const sampleSongs = [
     genre: "Synthwave",
     year: 2020,
     isFavorite: true,
+    streams: "3,812,490,140",
   },
   {
     id: 6,
@@ -82,6 +87,7 @@ export const sampleSongs = [
     genre: "Pop",
     year: 2017,
     isFavorite: true,
+    streams: "3,590,112,890",
   },
   {
     id: 7,
@@ -96,6 +102,7 @@ export const sampleSongs = [
     genre: "Soul",
     year: 2011,
     isFavorite: false,
+    streams: "1,894,302,450",
   },
   {
     id: 8,
@@ -110,8 +117,99 @@ export const sampleSongs = [
     genre: "Alt Pop",
     year: 2019,
     isFavorite: false,
+    streams: "2,210,945,670",
+  },
+  {
+    id: 9,
+    title: "All of Me",
+    artist: "John Legend",
+    featured: "John Legend",
+    album: "Love in the Future",
+    duration: "3:42",
+    imageUrl:
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-1.wav",
+    genre: "Soul / R&B",
+    year: 2013,
+    isFavorite: true,
+    streams: "952,772,984",
+  },
+  {
+    id: 10,
+    title: "Wild",
+    artist: "John Legend, Gary Clark Jr.",
+    featured: "feat. Gary Clark Jr.",
+    album: "Bigger Love",
+    duration: "3:16",
+    imageUrl:
+      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-2.wav",
+    genre: "Soul",
+    year: 2020,
+    isFavorite: false,
+    streams: "184,230,119",
+  },
+  {
+    id: 11,
+    title: "Minefields",
+    artist: "Faouzia, John Legend",
+    featured: "Faouzia feat. John Legend",
+    album: "Minefields",
+    duration: "3:37",
+    imageUrl:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-3.wav",
+    genre: "Pop / Soul",
+    year: 2020,
+    isFavorite: false,
+    streams: "142,880,540",
+  },
+  {
+    id: 12,
+    title: "I Know Better",
+    artist: "John Legend",
+    featured: "John Legend",
+    album: "Darkness and Light",
+    duration: "3:53",
+    imageUrl:
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-4.wav",
+    genre: "Soul",
+    year: 2016,
+    isFavorite: true,
+    streams: "264,341,876",
+  },
+  {
+    id: 13,
+    title: "Bigger Love",
+    artist: "John Legend",
+    featured: "John Legend",
+    album: "Bigger Love",
+    duration: "4:24",
+    imageUrl:
+      "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-5.wav",
+    genre: "Soul / Pop",
+    year: 2020,
+    isFavorite: false,
+    streams: "128,636,453",
+  },
+  {
+    id: 14,
+    title: "This Christmas",
+    artist: "John Legend",
+    featured: "John Legend",
+    album: "A Legendary Christmas",
+    duration: "3:38",
+    imageUrl:
+      "https://images.unsplash.com/photo-1482517967863-00e15c9b44be?w=500&h=500&fit=crop",
+    audioUrl: "/audio/track-6.wav",
+    genre: "Holiday / Soul",
+    year: 2018,
+    isFavorite: false,
+    streams: "52,872,984",
   },
 ];
 
-export const trendingSongs = sampleSongs.slice(0, 4);
+export const trendingSongs = sampleSongs.slice(0, 6);
 export const favoriteSongs = sampleSongs.filter((song) => song.isFavorite);
