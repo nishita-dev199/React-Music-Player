@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMusic } from "../Shared/MusicContext";
+import { searchLiveMusicApi, searchSpotifyTracks } from "../lib/spotify";
 
 /* ── SVG Icons ── */
 const LogoIcon = () => (
@@ -106,9 +107,42 @@ export default function Header({ user, onLogin, onSignup, onLogout }) {
     selectedCategory,
     setSelectedCategory,
     categories,
+    isSpotifyConnected,
   } = useMusic();
 
   const query = searchQuery.trim().toLowerCase();
+  const [apiSearchSongs, setApiSearchSongs] = useState([]);
+
+  // Debounced live API search across Spotify / Music API
+  useEffect(() => {
+    if (!query || query.length < 2) {
+      setApiSearchSongs([]);
+      return;
+    }
+
+    let active = true;
+    const timeout = setTimeout(async () => {
+      try {
+        let results = [];
+        if (isSpotifyConnected) {
+          results = await searchSpotifyTracks(query);
+        }
+        if (!results || results.length === 0) {
+          results = await searchLiveMusicApi(query, 6);
+        }
+        if (active && results && results.length > 0) {
+          setApiSearchSongs(results);
+        }
+      } catch (err) {
+        console.warn("Live search API error:", err);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [query, isSpotifyConnected]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -132,17 +166,27 @@ export default function Header({ user, onLogin, onSignup, onLogout }) {
     );
   }, [query]);
 
-  // Matching songs
+  // Matching songs (Loaded catalog + live API search results)
   const matchingSongs = useMemo(() => {
     if (!query) return [];
-    return songs.filter(
+    const local = songs.filter(
       (song) =>
-        song.title.toLowerCase().includes(query) ||
-        song.artist.toLowerCase().includes(query) ||
+        song.title?.toLowerCase().includes(query) ||
+        song.artist?.toLowerCase().includes(query) ||
         song.album?.toLowerCase().includes(query) ||
         song.genre?.toLowerCase().includes(query)
     );
-  }, [songs, query]);
+    const combined = [...local, ...apiSearchSongs];
+    const unique = [];
+    const seen = new Set();
+    for (const s of combined) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id);
+        unique.push(s);
+      }
+    }
+    return unique;
+  }, [songs, query, apiSearchSongs]);
 
   // Matching categories
   const matchingCategories = useMemo(() => {

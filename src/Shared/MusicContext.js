@@ -5,8 +5,7 @@ import {
   isSpotifyConnected,
   connectSpotify,
   disconnectSpotify,
-  fetchSpotifyUserTopTracks,
-  searchSpotifyTracks,
+  fetchUnifiedApiTracks,
 } from "../lib/spotify";
 
 const MusicContext = createContext(null);
@@ -93,38 +92,48 @@ export function MusicProvider({ children }) {
   const [searchMode, setSearchMode] = useState("songs"); // 'songs' | 'categories'
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Spotify live tracks and connection state
-  const [spotifySongs, setSpotifySongs] = useState([]);
+  // Live API tracks and Spotify connection state
+  const [apiSongs, setApiSongs] = useState([]);
   const [isSpotifyAuthed, setIsSpotifyAuthed] = useState(() => isSpotifyConnected());
+  const [isApiLoading, setIsApiLoading] = useState(true);
 
-  // Load live tracks from Spotify when connected
+  // Load live tracks from Spotify (if connected) or Live Music API
   useEffect(() => {
     let active = true;
 
-    async function loadSpotifyTracks() {
-      if (isSpotifyConnected()) {
-        setIsSpotifyAuthed(true);
-        try {
-          let tracks = await fetchSpotifyUserTopTracks();
-          if (!tracks || tracks.length === 0) {
-            tracks = await searchSpotifyTracks("Top Hits");
-          }
-          if (active && tracks && tracks.length > 0) {
-            setSpotifySongs(tracks);
-          }
-        } catch (e) {
-          console.warn("Spotify tracks fetch:", e);
+    async function loadTracks() {
+      setIsSpotifyAuthed(isSpotifyConnected());
+      try {
+        setIsApiLoading(true);
+        const tracks = await fetchUnifiedApiTracks();
+        if (active && tracks && tracks.length > 0) {
+          setApiSongs(tracks);
+          // Auto-select the first API track for playback and queue if currentSong is still the initial placeholder
+          setCurrentSong((prev) => {
+            if (!prev || prev.id === combinedBaseCatalog[0]?.id) {
+              return tracks[0];
+            }
+            return prev;
+          });
+          setCurrentQueue((prev) => {
+            if (!prev || prev === combinedBaseCatalog) {
+              return tracks;
+            }
+            return prev;
+          });
         }
-      } else {
-        setIsSpotifyAuthed(false);
+      } catch (e) {
+        console.warn("Unified music tracks fetch failed:", e);
+      } finally {
+        if (active) setIsApiLoading(false);
       }
     }
 
-    loadSpotifyTracks();
+    loadTracks();
 
     const handleStorage = () => {
       setIsSpotifyAuthed(isSpotifyConnected());
-      loadSpotifyTracks();
+      loadTracks();
     };
     window.addEventListener("storage", handleStorage);
 
@@ -174,9 +183,9 @@ export function MusicProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSong?.id, currentSong?.audioUrl, currentSong?.duration]);
 
-  // Computed songs list with dynamic isFavorite flag (Spotify tracks + Base Catalog)
+  // Computed songs list with dynamic isFavorite flag (API tracks prioritized + Base Catalog)
   const songs = useMemo(() => {
-    const combined = [...spotifySongs, ...combinedBaseCatalog];
+    const combined = apiSongs.length > 0 ? [...apiSongs, ...combinedBaseCatalog] : combinedBaseCatalog;
     const unique = [];
     const seen = new Set();
     for (const s of combined) {
@@ -189,7 +198,7 @@ export function MusicProvider({ children }) {
       }
     }
     return unique;
-  }, [spotifySongs, favoriteIds]);
+  }, [apiSongs, favoriteIds]);
 
   // Active playing song with dynamic isFavorite flag
   const activeSong = useMemo(() => {
@@ -211,7 +220,7 @@ export function MusicProvider({ children }) {
     });
   }, []);
 
-  // Play a specific track (from Discover, Now Playing, Library, etc.)
+  // Play a specific track (from Discover, Now Playing, Library, Search, etc.)
   const playTrack = useCallback((song, queue = null) => {
     if (!song) return;
     setCurrentSong(song);
@@ -221,6 +230,11 @@ export function MusicProvider({ children }) {
     if (queue && Array.isArray(queue) && queue.length > 0) {
       setCurrentQueue(queue);
     }
+    // Include the song in apiSongs so it remains in catalog
+    setApiSongs((prev) => {
+      if (prev.some((s) => s.id === song.id)) return prev;
+      return [song, ...prev];
+    });
     const audio = audioRef.current;
     if (audio) {
       const targetSrc = song.audioUrl || "/audio/track-1.wav";
@@ -445,7 +459,13 @@ export function MusicProvider({ children }) {
       isSpotifyConnected: isSpotifyAuthed,
       connectSpotify,
       disconnectSpotify,
-      spotifySongs,
+      spotifySongs: apiSongs,
+      apiSongs,
+      isApiLoading,
+      refreshTracks: async () => {
+        const tracks = await fetchUnifiedApiTracks();
+        if (tracks && tracks.length > 0) setApiSongs(tracks);
+      },
     }),
     [
       songs,
@@ -476,7 +496,8 @@ export function MusicProvider({ children }) {
       renamePlaylist,
       deletePlaylist,
       isSpotifyAuthed,
-      spotifySongs,
+      apiSongs,
+      isApiLoading,
     ]
   );
 

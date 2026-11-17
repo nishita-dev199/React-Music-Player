@@ -8,12 +8,16 @@ export const getSpotifyClientId = () => {
     if (process.env.REACT_APP_SPOTIFY_CLIENT_ID) return process.env.REACT_APP_SPOTIFY_CLIENT_ID;
     if (process.env.VITE_SPOTIFY_CLIENT_ID) return process.env.VITE_SPOTIFY_CLIENT_ID;
   }
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_SPOTIFY_CLIENT_ID) {
-      return import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-    }
-  } catch (e) {}
   return "5eb38f8246ab407b9d3e28a0768e6d3f";
+};
+
+export const getSpotifyClientSecret = () => {
+  if (typeof process !== "undefined" && process.env) {
+    if (process.env.REACT_APP_SPOTIFY_CLIENT_SECRET) return process.env.REACT_APP_SPOTIFY_CLIENT_SECRET;
+    if (process.env.SPOTIFY_CLIENT_SECRET) return process.env.SPOTIFY_CLIENT_SECRET;
+    if (process.env.VITE_SPOTIFY_CLIENT_SECRET) return process.env.VITE_SPOTIFY_CLIENT_SECRET;
+  }
+  return null;
 };
 
 export const getSpotifyRedirectUri = () => {
@@ -31,11 +35,6 @@ export const getSpotifyRedirectUri = () => {
     if (process.env.REACT_APP_SPOTIFY_REDIRECT_URI) return process.env.REACT_APP_SPOTIFY_REDIRECT_URI;
     if (process.env.VITE_SPOTIFY_REDIRECT_URI) return process.env.VITE_SPOTIFY_REDIRECT_URI;
   }
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_SPOTIFY_REDIRECT_URI) {
-      return import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
-    }
-  } catch (e) {}
 
   return "https://react-music-player-sigma-three.vercel.app/callback";
 };
@@ -171,33 +170,69 @@ export async function handleSpotifyCallback() {
 }
 
 /**
- * Check if the user has an active, valid Spotify token
+ * Check if the user has an active, valid Spotify token (user token or client credentials token)
  */
 export function isSpotifyConnected() {
+  return Boolean(getSpotifyToken());
+}
+
+/**
+ * Returns the active Spotify access token (user OAuth or client credentials), if valid
+ */
+export function getSpotifyToken() {
   try {
-    const token =
+    const userToken =
       sessionStorage.getItem("spotify_access_token") ||
       localStorage.getItem("spotify_access_token");
-    const expiresAt = Number(
+    const userExpiresAt = Number(
       sessionStorage.getItem("spotify_expires_at") ||
       localStorage.getItem("spotify_expires_at") ||
       0
     );
-    return Boolean(token && Date.now() < expiresAt);
-  } catch (e) {
-    return false;
-  }
+    if (userToken && Date.now() < userExpiresAt) {
+      return userToken;
+    }
+
+    const appToken = localStorage.getItem("spotify_app_token");
+    const appExpiresAt = Number(localStorage.getItem("spotify_app_token_expires_at") || 0);
+    if (appToken && Date.now() < appExpiresAt) {
+      return appToken;
+    }
+  } catch (e) {}
+  return null;
 }
 
 /**
- * Returns the active Spotify access token, if any
+ * Fetches token via Spotify Client Credentials flow if CLIENT_SECRET is present
  */
-export function getSpotifyToken() {
-  if (!isSpotifyConnected()) return null;
-  return (
-    sessionStorage.getItem("spotify_access_token") ||
-    localStorage.getItem("spotify_access_token")
-  );
+export async function fetchClientCredentialsToken() {
+  const clientId = getSpotifyClientId();
+  const clientSecret = getSpotifyClientSecret();
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const creds = btoa(`${clientId}:${clientSecret}`);
+    const res = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${creds}`,
+      },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+      }),
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      const expiresAt = String(Date.now() + data.expires_in * 1000);
+      localStorage.setItem("spotify_app_token", data.access_token);
+      localStorage.setItem("spotify_app_token_expires_at", expiresAt);
+      return data.access_token;
+    }
+  } catch (err) {
+    console.warn("Client credentials error:", err);
+  }
+  return null;
 }
 
 /**
@@ -333,4 +368,117 @@ export async function fetchSpotifyNewReleases() {
     console.warn("Spotify new releases error:", err);
   }
   return [];
+}
+
+/**
+ * Live Music API Search & Top Tracks (Fallback & Live API provider)
+ * Fetches real songs with 600x600 artwork and playable audio streams
+ */
+export async function searchLiveMusicApi(query, limit = 20) {
+  if (!query || !query.trim()) return [];
+  try {
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query.trim())}&entity=song&limit=${limit}`
+    );
+    const data = await res.json();
+    if (!data.results || !Array.isArray(data.results)) return [];
+
+    return data.results.map((t, idx) => {
+      const durationMs = t.trackTimeMillis || 180000;
+      const min = Math.floor(durationMs / 60000);
+      const sec = Math.floor((durationMs % 60000) / 1000);
+      const dur = `${min}:${sec < 10 ? "0" : ""}${sec}`;
+      const img = t.artworkUrl100
+        ? t.artworkUrl100.replace("100x100bb", "600x600bb")
+        : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&h=500&fit=crop";
+
+      return {
+        id: `api-${t.trackId}`,
+        title: t.trackName,
+        artist: t.artistName,
+        featured: t.artistName,
+        album: t.collectionName || t.trackName,
+        duration: dur,
+        imageUrl: img,
+        audioUrl: t.previewUrl || `/audio/track-${(idx % 8) + 1}.wav`,
+        genre: t.primaryGenreName || "Pop",
+        year: t.releaseDate ? parseInt(t.releaseDate.slice(0, 4), 10) : 2024,
+        isFavorite: false,
+        streams: (120000000 + (t.trackId % 800000000)).toLocaleString(),
+      };
+    });
+  } catch (e) {
+    console.warn("Live music API search error:", e);
+    return [];
+  }
+}
+
+/**
+ * Fetches live songs from the Music API across top trending artists & categories
+ */
+export async function fetchLiveApiTracks() {
+  const topQueries = [
+    "John Legend",
+    "The Weeknd",
+    "Billie Eilish",
+    "Dua Lipa",
+    "Ed Sheeran",
+    "Coldplay",
+    "Taylor Swift",
+    "B.B. King",
+    "Daft Punk",
+    "BTS",
+  ];
+
+  try {
+    const results = await Promise.all(
+      topQueries.map((query) => searchLiveMusicApi(query, 3))
+    );
+    const flat = results.flat();
+    // Deduplicate by ID
+    const seen = new Set();
+    const unique = [];
+    for (const song of flat) {
+      if (!seen.has(song.id)) {
+        seen.add(song.id);
+        unique.push(song);
+      }
+    }
+    return unique;
+  } catch (err) {
+    console.warn("Live API tracks error:", err);
+    return [];
+  }
+}
+
+/**
+ * Unified loader: Fetches from Spotify API if connected, or loads live songs from Music API
+ */
+export async function fetchUnifiedApiTracks() {
+  // 1. If Spotify client secret is provided in environment, attempt client credentials
+  if (!isSpotifyConnected() && getSpotifyClientSecret()) {
+    try {
+      await fetchClientCredentialsToken();
+    } catch (e) {
+      console.warn("Client credentials attempt:", e);
+    }
+  }
+
+  // 2. If Spotify is connected (via user PKCE or Client Credentials), fetch from Spotify Web API
+  if (isSpotifyConnected()) {
+    try {
+      let tracks = await fetchSpotifyUserTopTracks();
+      if (!tracks || tracks.length === 0) {
+        tracks = await searchSpotifyTracks("Top Hits 2024");
+      }
+      if (tracks && tracks.length > 0) {
+        return tracks;
+      }
+    } catch (e) {
+      console.warn("Spotify API fetch failed, falling back to live music API:", e);
+    }
+  }
+
+  // 3. Fallback: Load live songs from Live Music API
+  return await fetchLiveApiTracks();
 }
