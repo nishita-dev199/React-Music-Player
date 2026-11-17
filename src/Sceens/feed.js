@@ -33,10 +33,33 @@ export default function Feed() {
     playTrack,
     togglePlay,
     toggleFavorite,
+    favoriteIds,
   } = useMusic();
 
   // Local categories state to allow instant favorite updates on record players
-  const [categories, setCategories] = useState(discoverCategories);
+  const [categories, setCategories] = useState(() =>
+    discoverCategories.map((cat) => ({
+      ...cat,
+      songs: cat.songs.map((s) => ({
+        ...s,
+        isFavorite: favoriteIds ? favoriteIds.includes(s.id) : Boolean(s.isFavorite),
+      })),
+    }))
+  );
+
+  // Keep favorite flags in sync with global favorites
+  React.useEffect(() => {
+    if (!favoriteIds) return;
+    setCategories((prev) =>
+      prev.map((cat) => ({
+        ...cat,
+        songs: cat.songs.map((s) => ({
+          ...s,
+          isFavorite: favoriteIds.includes(s.id),
+        })),
+      }))
+    );
+  }, [favoriteIds]);
 
   // Modal and toast state
   const [playlistModalSong, setPlaylistModalSong] = useState(null);

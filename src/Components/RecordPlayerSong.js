@@ -42,6 +42,15 @@ const PlaylistAddIcon = () => (
   </svg>
 );
 
+const SpotifyIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#1db954">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M8 9.5c3-0.5 6 0 8 1" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M7.5 12.5c3.2-0.4 6 0.2 8.5 1.5" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M8 15.5c2.5-0.3 5 0.2 7 1" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
 export default function RecordPlayerSong({
   song,
   isCenter = false,
@@ -170,6 +179,23 @@ export default function RecordPlayerSong({
           >
             <HeartIcon filled={song.isFavorite} />
           </button>
+
+          {/* Spotify Direct link */}
+          <a
+            href={
+              song.spotifyUrl ||
+              `https://open.spotify.com/search/${encodeURIComponent(
+                `${song.title} ${song.artist}`
+              )}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="p-1.5 rounded-full text-[#1db954] hover:text-white bg-black/35 hover:bg-[#1db954] border border-[#1db954]/40 transition-all shadow-sm hover:scale-105 active:scale-95 flex items-center justify-center"
+            title="Open on Spotify"
+          >
+            <SpotifyIcon size={14} />
+          </a>
         </div>
       </div>
     </div>

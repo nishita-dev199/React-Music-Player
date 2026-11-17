@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import Navigation from "./Navigation";
 import Header from "./Header";
+import BottomPlayerBar from "./BottomPlayerBar";
 import AuthModal from "./AuthModal";
 import ToastContainer from "./Toast";
 
@@ -55,12 +56,15 @@ export default function Layout({ children }) {
           isHome
             ? "p-0 w-full h-full overflow-y-auto overflow-x-hidden lg:overflow-hidden"
             : isDiscover
-            ? "p-0 w-full overflow-y-scroll overflow-x-hidden"
-            : "overflow-y-auto px-4 md:pl-28 md:pr-8 pt-4 pb-24 md:py-6"
+            ? "p-0 w-full overflow-y-scroll overflow-x-hidden pb-36 md:pb-28"
+            : "overflow-y-auto px-4 md:pl-28 md:pr-8 pt-4 pb-36 md:pb-28"
         }`}
       >
         {children}
       </main>
+
+      {/* Global Spotify Playback Bar on every page (Discover, Favourites, Library, Trending) */}
+      <BottomPlayerBar />
 
       {/* Auth Modal */}
       {authMode && (

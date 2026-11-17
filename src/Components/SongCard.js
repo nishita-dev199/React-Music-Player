@@ -49,6 +49,15 @@ const TrashIcon = () => (
   </svg>
 );
 
+const SpotifyIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#1db954">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M8 9.5c3-0.5 6 0 8 1" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M7.5 12.5c3.2-0.4 6 0.2 8.5 1.5" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M8 15.5c2.5-0.3 5 0.2 7 1" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
 export default function SongCard({
   song,
   onPlay,
@@ -180,6 +189,23 @@ export default function SongCard({
             <TrashIcon />
           </button>
         )}
+
+        {/* Spotify Link */}
+        <a
+          href={
+            song.spotifyUrl ||
+            `https://open.spotify.com/search/${encodeURIComponent(
+              `${song.title} ${song.artist}`
+            )}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 rounded-full hover:bg-white/20 text-[#1db954] transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+          title="Open in Spotify"
+        >
+          <SpotifyIcon size={16} />
+        </a>
 
         {/* Favorite Heart */}
         <button
