@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { sampleSongs } from "./musicData";
 import { discoverCategories } from "./discoverData";
+import {
+  isSpotifyConnected,
+  connectSpotify,
+  disconnectSpotify,
+  fetchSpotifyUserTopTracks,
+  searchSpotifyTracks,
+} from "../lib/spotify";
 
 const MusicContext = createContext(null);
 
@@ -86,6 +93,47 @@ export function MusicProvider({ children }) {
   const [searchMode, setSearchMode] = useState("songs"); // 'songs' | 'categories'
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  // Spotify live tracks and connection state
+  const [spotifySongs, setSpotifySongs] = useState([]);
+  const [isSpotifyAuthed, setIsSpotifyAuthed] = useState(() => isSpotifyConnected());
+
+  // Load live tracks from Spotify when connected
+  useEffect(() => {
+    let active = true;
+
+    async function loadSpotifyTracks() {
+      if (isSpotifyConnected()) {
+        setIsSpotifyAuthed(true);
+        try {
+          let tracks = await fetchSpotifyUserTopTracks();
+          if (!tracks || tracks.length === 0) {
+            tracks = await searchSpotifyTracks("Top Hits");
+          }
+          if (active && tracks && tracks.length > 0) {
+            setSpotifySongs(tracks);
+          }
+        } catch (e) {
+          console.warn("Spotify tracks fetch:", e);
+        }
+      } else {
+        setIsSpotifyAuthed(false);
+      }
+    }
+
+    loadSpotifyTracks();
+
+    const handleStorage = () => {
+      setIsSpotifyAuthed(isSpotifyConnected());
+      loadSpotifyTracks();
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   // Synchronize favorites to localStorage
   useEffect(() => {
     try {
@@ -126,13 +174,22 @@ export function MusicProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSong?.id, currentSong?.audioUrl, currentSong?.duration]);
 
-  // Computed songs list with dynamic isFavorite flag
+  // Computed songs list with dynamic isFavorite flag (Spotify tracks + Base Catalog)
   const songs = useMemo(() => {
-    return combinedBaseCatalog.map((s) => ({
-      ...s,
-      isFavorite: favoriteIds.includes(s.id),
-    }));
-  }, [favoriteIds]);
+    const combined = [...spotifySongs, ...combinedBaseCatalog];
+    const unique = [];
+    const seen = new Set();
+    for (const s of combined) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id);
+        unique.push({
+          ...s,
+          isFavorite: favoriteIds.includes(s.id),
+        });
+      }
+    }
+    return unique;
+  }, [spotifySongs, favoriteIds]);
 
   // Active playing song with dynamic isFavorite flag
   const activeSong = useMemo(() => {
@@ -385,6 +442,10 @@ export function MusicProvider({ children }) {
       createPlaylist,
       renamePlaylist,
       deletePlaylist,
+      isSpotifyConnected: isSpotifyAuthed,
+      connectSpotify,
+      disconnectSpotify,
+      spotifySongs,
     }),
     [
       songs,
@@ -414,6 +475,8 @@ export function MusicProvider({ children }) {
       createPlaylist,
       renamePlaylist,
       deletePlaylist,
+      isSpotifyAuthed,
+      spotifySongs,
     ]
   );
 

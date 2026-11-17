@@ -143,6 +143,8 @@ export default function Player() {
     selectedCategory,
     setSelectedCategory,
     categories,
+    isSpotifyConnected,
+    connectSpotify,
   } = useMusic();
 
   // Modal & Toast state
@@ -500,14 +502,24 @@ export default function Player() {
               <span>Add to Playlist</span>
             </button>
 
-            {/* Spotify Quick Save */}
+            {/* Spotify Quick Save / Connect */}
             <button
-              onClick={() => showToast("Synced with Spotify 🎧")}
+              onClick={() => {
+                if (!isSpotifyConnected) {
+                  connectSpotify();
+                } else {
+                  if (currentSong?.spotifyUrl) {
+                    window.open(currentSong.spotifyUrl, "_blank");
+                  } else {
+                    showToast("Connected to Spotify 🎧");
+                  }
+                }
+              }}
               className="px-3 py-2 rounded-full border border-white/30 hover:border-white/50 bg-black/25 hover:bg-black/40 backdrop-blur-md text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:scale-105 active:scale-95"
-              title="Spotify"
+              title={isSpotifyConnected ? "Open in Spotify" : "Connect Spotify"}
             >
               <SpotifyIcon />
-              <span className="hidden sm:inline text-[11px]">Spotify</span>
+              <span className="hidden sm:inline text-[11px]">{isSpotifyConnected ? "Spotify ✓" : "Spotify"}</span>
             </button>
           </div>
         </div>

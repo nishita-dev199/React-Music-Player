@@ -6,6 +6,7 @@ import Favourites from "./favourites";
 import Player from "./player";
 import Trending from "./trending";
 import Library from "./library";
+import SpotifyCallback from "../Components/SpotifyCallback";
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
           <Route path="/favourites" element={<Favourites />} />
           <Route path="/player" element={<Player />} />
           <Route path="/trending" element={<Trending />} />
+          <Route path="/callback" element={<SpotifyCallback />} />
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
