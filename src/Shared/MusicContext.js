@@ -55,6 +55,7 @@ allDiscoverSongs.forEach((song) => {
 export function MusicProvider({ children }) {
   // Global Audio ref
   const audioRef = useRef(null);
+  const currentAudioSrcRef = useRef("");
 
   // Favorites persistence
   const [favoriteIds, setFavoriteIds] = useState(() => {
@@ -175,9 +176,9 @@ export function MusicProvider({ children }) {
     const audio = audioRef.current;
     if (audio) {
       const targetSrc = currentSong.audioUrl || "/audio/track-1.wav";
-      if (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc)) {
+      if (currentAudioSrcRef.current !== targetSrc) {
         audio.src = targetSrc;
-        audio.load();
+        currentAudioSrcRef.current = targetSrc;
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,20 +239,29 @@ export function MusicProvider({ children }) {
     const audio = audioRef.current;
     if (audio) {
       const targetSrc = song.audioUrl || "/audio/track-1.wav";
-      if (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc)) {
+      if (currentAudioSrcRef.current !== targetSrc) {
         audio.src = targetSrc;
+        currentAudioSrcRef.current = targetSrc;
       }
       audio.currentTime = 0;
       audio.loop = true;
-      audio.load();
-      const p = audio.play();
-      if (p !== undefined) {
-        p.then(() => {
-          setIsPlaying(true);
-        }).catch((err) => {
-          console.warn("Audio play prevented / waiting for interaction:", err);
-          setIsPlaying(true);
-        });
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch((err) => {
+            console.warn("Audio play error, falling back:", err);
+            const fallback = `/audio/track-1.wav`;
+            if (currentAudioSrcRef.current !== fallback) {
+              audio.src = fallback;
+              currentAudioSrcRef.current = fallback;
+              audio.currentTime = 0;
+              audio.play().catch(() => {});
+            }
+            setIsPlaying(true);
+          });
       }
     }
   }, []);
@@ -310,9 +320,9 @@ export function MusicProvider({ children }) {
       setIsPlaying(true);
       if (audio) {
         const targetSrc = currentSong?.audioUrl || "/audio/track-1.wav";
-        if (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc)) {
+        if (currentAudioSrcRef.current !== targetSrc) {
           audio.src = targetSrc;
-          audio.load();
+          currentAudioSrcRef.current = targetSrc;
         }
         audio.loop = true;
         if (audio.ended) {
@@ -324,6 +334,13 @@ export function MusicProvider({ children }) {
             setIsPlaying(true);
           }).catch((err) => {
             console.warn("Audio play resume handled:", err);
+            const fallback = `/audio/track-1.wav`;
+            if (currentAudioSrcRef.current !== fallback) {
+              audio.src = fallback;
+              currentAudioSrcRef.current = fallback;
+              audio.currentTime = 0;
+              audio.play().catch(() => {});
+            }
             setIsPlaying(true);
           });
         }
@@ -511,6 +528,18 @@ export function MusicProvider({ children }) {
         preload="auto"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onError={() => {
+          const audio = audioRef.current;
+          if (audio) {
+            const fallback = `/audio/track-1.wav`;
+            if (currentAudioSrcRef.current !== fallback) {
+              audio.src = fallback;
+              currentAudioSrcRef.current = fallback;
+              audio.currentTime = 0;
+              audio.play().catch(() => {});
+            }
+          }
+        }}
       />
     </MusicContext.Provider>
   );

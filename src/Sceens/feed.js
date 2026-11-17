@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { discoverCategories } from "../Shared/discoverData";
 import { useMusic } from "../Shared/MusicContext";
@@ -6,19 +6,6 @@ import InfiniteRecordRow from "../Components/InfiniteRecordRow";
 import AddToPlaylistModal from "../Components/AddToPlaylistModal";
 
 /* ── SVG Icons ── */
-const MiniPlayIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="6 4 18 12 6 20 6 4" />
-  </svg>
-);
-
-const MiniPauseIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <rect x="6" y="4" width="4" height="16" rx="1" />
-    <rect x="14" y="4" width="4" height="16" rx="1" />
-  </svg>
-);
-
 const ArrowUpRightIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="7" y1="17" x2="17" y2="7"/>
@@ -34,32 +21,56 @@ export default function Feed() {
     togglePlay,
     toggleFavorite,
     favoriteIds,
+    spotifySongs,
+    apiSongs,
+    isSpotifyConnected,
   } = useMusic();
 
-  // Local categories state to allow instant favorite updates on record players
-  const [categories, setCategories] = useState(() =>
-    discoverCategories.map((cat) => ({
-      ...cat,
-      songs: cat.songs.map((s) => ({
-        ...s,
-        isFavorite: favoriteIds ? favoriteIds.includes(s.id) : Boolean(s.isFavorite),
-      })),
-    }))
-  );
+  // Live Spotify & unified API songs list
+  const liveSpotifySongs = useMemo(() => {
+    const list =
+      spotifySongs && spotifySongs.length > 0
+        ? spotifySongs
+        : apiSongs && apiSongs.length > 0
+        ? apiSongs
+        : [];
+    return list;
+  }, [spotifySongs, apiSongs]);
 
-  // Keep favorite flags in sync with global favorites
-  React.useEffect(() => {
-    if (!favoriteIds) return;
-    setCategories((prev) =>
-      prev.map((cat) => ({
+  // Construct complete categories with Spotify Top Hits as the premiere top row
+  const categories = useMemo(() => {
+    const allCategories = [];
+
+    // 1. Spotify Top Hits & Trending Category
+    if (liveSpotifySongs.length > 0) {
+      allCategories.push({
+        id: "spotify-hits",
+        title: "Spotify Top Hits & Trending",
+        subtitle: isSpotifyConnected
+          ? "Your connected Spotify account chartbusters & live streaming vinyls"
+          : "Global Spotify chartbusters & live streaming vinyls",
+        icon: "🟢",
+        tag: "Spotify Live",
+        songs: liveSpotifySongs.slice(0, 12).map((s) => ({
+          ...s,
+          isFavorite: favoriteIds ? favoriteIds.includes(s.id) : Boolean(s.isFavorite),
+        })),
+      });
+    }
+
+    // 2. Curated Discover Categories with favorite flags synced
+    discoverCategories.forEach((cat) => {
+      allCategories.push({
         ...cat,
         songs: cat.songs.map((s) => ({
           ...s,
-          isFavorite: favoriteIds.includes(s.id),
+          isFavorite: favoriteIds ? favoriteIds.includes(s.id) : Boolean(s.isFavorite),
         })),
-      }))
-    );
-  }, [favoriteIds]);
+      });
+    });
+
+    return allCategories;
+  }, [liveSpotifySongs, isSpotifyConnected, favoriteIds]);
 
   // Modal and toast state
   const [playlistModalSong, setPlaylistModalSong] = useState(null);
@@ -74,34 +85,23 @@ export default function Feed() {
     if (currentSong?.id === song.id) {
       togglePlay();
     } else {
-      playTrack(song, categorySongs || categories.flatMap((c) => c.songs));
+      const queue = categorySongs || categories.flatMap((c) => c.songs);
+      playTrack(song, queue);
       showToast(`Now Playing "${song.title}" — synced with Now Playing! 🎶`);
     }
   };
 
   const handleToggleFavorite = (songId) => {
     toggleFavorite(songId);
-    let updatedTitle = "";
-    let willBeFavorite = false;
-
-    setCategories((prev) =>
-      prev.map((cat) => ({
-        ...cat,
-        songs: cat.songs.map((s) => {
-          if (s.id === songId) {
-            updatedTitle = s.title;
-            willBeFavorite = !s.isFavorite;
-            return { ...s, isFavorite: willBeFavorite };
-          }
-          return s;
-        }),
-      }))
-    );
+    const isCurrentlyFav = favoriteIds ? favoriteIds.includes(songId) : false;
+    const allSongs = categories.flatMap((c) => c.songs);
+    const song = allSongs.find((s) => s.id === songId);
+    const title = song?.title || "Track";
 
     showToast(
-      willBeFavorite
-        ? `Added "${updatedTitle}" to Favourites! ❤️`
-        : `Removed "${updatedTitle}" from Favourites`
+      !isCurrentlyFav
+        ? `Added "${title}" to Favourites! ❤️`
+        : `Removed "${title}" from Favourites`
     );
   };
 
@@ -138,15 +138,18 @@ export default function Feed() {
         <div className="px-6 sm:px-12 md:px-20 pt-6">
           <div className="relative overflow-hidden rounded-3xl bg-black/35 backdrop-blur-xl p-6 sm:p-8 border-2 border-[#e8412b]/60 shadow-[0_10px_35px_rgba(0,0,0,0.5),0_0_20px_rgba(232,65,43,0.3)] flex flex-col md:flex-row md:items-center md:justify-between gap-5">
             <div>
-              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1db954]/20 border border-[#1db954]/40 text-[#1db954] text-xs font-bold mb-2">
+                <span>🟢</span>
+                <span>{isSpotifyConnected ? "Spotify Connected" : "Spotify & Vinyl Integration Active"}</span>
+              </div>
 
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white mt-2 flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white mt-1 flex items-center gap-2.5">
                 <span>Discover Vinyl Records</span>
                 <span>🎧</span>
               </h1>
 
               <p className="text-sm text-white/85 mt-1 max-w-xl leading-relaxed">
-                Experience the authentic sound of vinyl records across curated categories. 
+                Experience authentic vinyl records across curated categories and live Spotify chartbusters with synced audio playback.
               </p>
             </div>
 
@@ -176,7 +179,11 @@ export default function Feed() {
               <button
                 key={cat.id}
                 onClick={() => handleScrollToCategory(cat.id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black bg-black/35 hover:bg-[#e8412b] border border-white/15 hover:border-white/40 text-white/90 hover:text-white transition-all hover:scale-105 active:scale-95 shadow whitespace-nowrap"
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition-all hover:scale-105 active:scale-95 shadow whitespace-nowrap ${
+                  cat.id === "spotify-hits"
+                    ? "bg-[#1db954]/25 hover:bg-[#1db954] border border-[#1db954]/60 text-white"
+                    : "bg-black/35 hover:bg-[#e8412b] border border-white/15 hover:border-white/40 text-white/90 hover:text-white"
+                }`}
               >
                 <span>{cat.icon}</span>
                 <span>{cat.title}</span>
@@ -185,7 +192,7 @@ export default function Feed() {
           </div>
         </div>
 
-        {/* ── 5 Rows of Infinite Horizontal Record Players with Gap ── */}
+        {/* ── Rows of Infinite Horizontal Record Players with Gap ── */}
         <div className="space-y-12 sm:space-y-16 w-full my-8">
           {categories.map((category) => (
             <div
@@ -205,50 +212,6 @@ export default function Feed() {
           ))}
         </div>
       </div>
-
-      {/* ── Floating Now Playing Vinyl Bar (When Audio Is Active) ── */}
-      {currentSong && (
-        <div className="fixed bottom-20 md:bottom-5 left-1/2 -translate-x-1/2 z-30 bg-[#103d44]/95 backdrop-blur-2xl border-2 border-[#e8412b] rounded-full px-5 py-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.8),0_0_25px_rgba(232,65,43,0.6)] flex items-center gap-4 text-white max-w-lg w-[90%] sm:w-auto animate-fadeIn">
-          {/* Spinning Mini Vinyl */}
-          <Link
-            to="/"
-            className="flex items-center gap-3 group/bar cursor-pointer min-w-0"
-            title="Open in Now Playing"
-          >
-            <div
-              className={`w-10 h-10 rounded-full vinyl-grooves relative flex items-center justify-center shrink-0 border border-white/30 shadow-md ${
-                isPlaying ? "spin-vinyl" : "spin-vinyl spin-paused"
-              }`}
-            >
-              <div className="w-4 h-4 rounded-full overflow-hidden border border-black/80">
-                <img
-                  src={currentSong.imageUrl}
-                  alt={currentSong.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
-            {/* Song info */}
-            <div className="min-w-0 flex-1 truncate">
-              <div className="text-xs font-black truncate group-hover/bar:text-orange-300 transition-colors flex items-center gap-1.5">
-                <span>{currentSong.title}</span>
-                <span className="text-[10px] text-white/50">↗</span>
-              </div>
-              <div className="text-[10px] text-white/70 truncate">{currentSong.artist}</div>
-            </div>
-          </Link>
-
-          {/* Play / Pause Toggle */}
-          <button
-            onClick={togglePlay}
-            className="w-8 h-8 rounded-full bg-[#e8412b] hover:bg-[#d93822] text-white flex items-center justify-center shadow-[0_0_12px_rgba(232,65,43,0.8)] transition-all hover:scale-105 active:scale-95 shrink-0"
-            title={isPlaying ? "Pause" : "Play"}
-          >
-            {isPlaying ? <MiniPauseIcon /> : <MiniPlayIcon />}
-          </button>
-        </div>
-      )}
 
       {/* ── Add to Playlist Modal ── */}
       {playlistModalSong && (
